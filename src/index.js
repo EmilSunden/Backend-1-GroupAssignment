@@ -21,8 +21,6 @@ const { countries } = require('./database/database');
 app.post('/countries', checkAdmin, (req, res) => {
     const { country, capital, language, population } = req.body;
 
-    console.log(cookieParser)
-
     const schema = joi.object({
         country: joi.string().min(4).max(25).required(),
         capital: joi.string().min(4).max(25).required(),
@@ -35,25 +33,27 @@ app.post('/countries', checkAdmin, (req, res) => {
         return res.status(400).json(validation.error.details[0].message);
     }
     
-    
     // we want to assign a random generated id for each country added
-    let id = uuidv4();
+    const id = uuidv4();
     countries.push({ id, country, capital, language, population });
-    console.log(countries);
 
-    res.status(200).send(`Added ${country}! Congratulations, it works!`)
+    res.status(201).send(`Added ${country}! Congratulations, it works!`)
 })
 
 app.get('/countries', (req, res) => {
-    res.status(202).send(countries)
+    res.status(200).send(countries)
 })
 
 app.get('/countries/:country', (req, res) => {
     const { country } = req.params
-    
-    let result = countries.find(item => item.country === country) // country => item => item.country && item.id = id
-        
-    res.status(200).send(`The result is ${result.capital}`)
+     
+    const result = countries.find(item => item.country === country);
+
+    if (!result) {
+        res.status(404).send('There is no such country!')
+    } else {
+        res.status(200).send(`The result is ${result.capital}`)
+    }   
 })
 
 app.patch('/countries/:country', checkAdmin, (req, res) => {
@@ -73,36 +73,30 @@ app.patch('/countries/:country', checkAdmin, (req, res) => {
     }
         
     let countryToUpdate = countries.find(item => item.country === country) 
-    const countryIndex = countries.indexOf(countryToUpdate)
-
-    Object.assign(countryToUpdate, req.body);
-
-    countries[countryIndex] = countryToUpdate;
-
-    console.log(countryToUpdate)
-    res.status(200).send(countryToUpdate)
+    
+    if (!countryToUpdate) {
+        res.status(404).send('No such country exists!')
+    } else {
+        Object.assign(countryToUpdate, req.body);
+        res.status(200).send(countryToUpdate)
+    }
 })
 
 app.delete('/countries/:country', checkAdmin, (req, res) => {
-    console.log("req params", req.params.country)
     const { country } = req.params;
     
     const itemIndex = countries.findIndex(item => item.country === country)
 
-    console.log(itemIndex);
     if (itemIndex >= 0) {
         countries.splice(itemIndex, 1);
-        console.log("Done Splice");
+        res.status(200).send(`Successfully deleted!`);
     } else {
-        console.log("No Splice");
+        res.status(400).send('No such country exists!');
     }
-
-    res.status(200).send(`Country Deleted ${itemIndex}`)
 })
 
 
 app.get('/admin', (req, res) => {
-
     res.cookie('adminToken', SECRET, {
         maxAge: 360000,
         sameSite: 'none',
@@ -113,9 +107,6 @@ app.get('/admin', (req, res) => {
 })
 
 
-
-
-
 app.listen(5000, () => {
     console.table('Server running on http://localhost:5000');
 })
@@ -123,8 +114,6 @@ app.listen(5000, () => {
 
 function checkAdmin(req, res, next){
     const adminToken = req.cookies.adminToken;
-    console.log(adminToken);
-
 
     if (adminToken === SECRET) {
         next()

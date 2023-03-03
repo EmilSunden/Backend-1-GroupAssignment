@@ -1,6 +1,5 @@
 // DB Array
-
-let countries = [
+const countries = [
     {
         id: "1",
         country: "sweden",
