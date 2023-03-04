@@ -103,7 +103,7 @@ app.delete("/countries/:country", checkAdmin, (req, res) => {
     countries.splice(itemIndex, 1);
     res.status(200).send(`Successfully deleted!`);
   } else {
-    res.status(400).send("No such country exists!");
+    res.status(404).send("No such country exists!");
   }
 });
 
